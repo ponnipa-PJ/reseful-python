@@ -13,10 +13,10 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 # annotations = ocrmac.OCR('Cropped2.jpg').recognize()
 # print(annotations)
 # ocrmac.OCR('Cropped3.jpg').annotate_PIL()
-pathbackend = requests.get('http://localhost:8081/api/database_path')
-pathnodejs = 'http://localhost:8081'
-# pathnodejs = 'https://api-fda.ponnipa.in.th'
-# pathbackend = requests.get('https://api-fda.ponnipa.in.th/api/database_path')
+# pathbackend = requests.get('http://localhost:8081/api/database_path')
+# pathnodejs = 'http://localhost:8081'
+pathnodejs = 'https://api-fda.ponnipa.in.th'
+pathbackend = requests.get('https://api-fda.ponnipa.in.th/api/database_path')
 
 # url = data.backend_path
 backend_path = json.loads(pathbackend.text)
