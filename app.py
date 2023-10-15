@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask,request
 from flask_cors import CORS, cross_origin
 from pythainlp.corpus.common import thai_words
 from pythainlp import Tokenizer,word_tokenize
