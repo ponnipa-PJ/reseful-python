@@ -8,7 +8,7 @@ import json
 
 app = Flask(__name__)
 
-CORS(app, resources={r"/checkkeyword": {"origins": "*"}})
+CORS(app, resources={r"/worktokendesc": {"origins": "*"}})
 app.config['CORS_HEADERS'] = 'Content-Type'
 # annotations = ocrmac.OCR('Cropped2.jpg').recognize()
 # print(annotations)
