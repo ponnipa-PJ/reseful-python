@@ -1,14 +1,14 @@
-from flask import Flask,request
+from flask import Flask, request
 from flask_cors import CORS, cross_origin
 from pythainlp.corpus.common import thai_words
-from pythainlp import Tokenizer,word_tokenize
+from pythainlp import Tokenizer, word_tokenize
 import numpy as np
 import requests
 import json
 
 app = Flask(__name__)
 
-cors = CORS(app,resources={r"/*": {"origins": "*"}})
+CORS(app, resources={r"/checkkeyword": {"origins": "*"}})
 app.config['CORS_HEADERS'] = 'Content-Type'
 # annotations = ocrmac.OCR('Cropped2.jpg').recognize()
 # print(annotations)
@@ -22,34 +22,35 @@ pathbackend = requests.get('https://api-fda.ponnipa.in.th/api/database_path')
 backend_path = json.loads(pathbackend.text)
 backend_path = backend_path["backend_path"]
 
+
 @app.route('/')
 def hello():
     return pathnodejs
+
 
 @app.route('/checkkeyword', methods=["GET"])
 def checkkeyword():
     name = request.args.get('name')
     # name = 'รายละเอียดสินค้าแท้% Fercy Fiber S เฟอร์ซี่ ไฟเบอร์ เอส Fercy Diet เฟอซี่ไดเอทFercy Diet เฟอร์ซี่ เคล็ดลับหุ่นดี คุมหิว อิ่มนาน น้ำหนักลงง่ายๆ ไม่ต้องอด ช่วยลดความอยากอาหาร ดักจับไขมัน'
-    
+
     keyword_dicts = requests.get(pathnodejs+'/api/keyword_dicts?status=1')
     keyword_dicts = keyword_dicts.text
     keyword_dicts = json.loads(keyword_dicts)
     keyword_dicts = np.asarray(keyword_dicts)
-    
+
     mapkeyword_dicts = requests.get(pathnodejs+'/api/keyword_dicts/mapdictId')
     mapkeyword_dicts = mapkeyword_dicts.text
     mapkeyword_dicts = json.loads(mapkeyword_dicts)
     mapkeyword_dicts = np.asarray(mapkeyword_dicts)
-    
+
     array_mapkeyword_dicts = []
     for dict in mapkeyword_dicts:
         array_mapkeyword_dicts.append(dict['id'])
-    
-    
+
     array_keyword = []
     for restaurant in keyword_dicts:
         array_keyword.append(restaurant['name'])
-    
+
     setting = requests.get(pathnodejs+'/api/token_setting')
     setting = setting.text
     setting = json.loads(setting)
@@ -61,7 +62,7 @@ def checkkeyword():
     arr_data = []
     spllist = []
     keywordarr = []
-    
+
     # print(array_desc)
     for des in array_desc:
         # print(k['name'])
@@ -72,86 +73,85 @@ def checkkeyword():
     # print('keywordarr',keywordarr)
     for ke in keywordarr:
         if ke not in newkeywordarr:
-            newkeywordarr.append(ke) 
-            
-    idx = {x:i for i,x in enumerate(array_desc)}  
+            newkeywordarr.append(ke)
+
+    idx = {x: i for i, x in enumerate(array_desc)}
     # print(idx)
-    idxdata = [] 
-    for i,x in enumerate(array_desc):
-        idxdata.append({'id':i,'x':x})
+    idxdata = []
+    for i, x in enumerate(array_desc):
+        idxdata.append({'id': i, 'x': x})
     # print(idxdata)
-    tt = [idx[x] for x in array_keyword if x in idx]  
-    tt=[]
+    tt = [idx[x] for x in array_keyword if x in idx]
+    tt = []
     # print(array_desc)
     # print('array_keyword',array_keyword)
     for x in array_keyword:
-        # print('x',x) 
+        # print('x',x)
         for i in idxdata:
-            # print('x',i['x']) 
+            # print('x',i['x'])
             # print('xx',x)
             if x in str(i['x']) and i['x'] != '':
                 # print(i['x'])
                 tt.append(i['id'])
-    # print(tt)   
+    # print(tt)
     tt.sort()
     new_list = []
     word = ''
     k = ''
     for w in tt:
         if w not in new_list:
-            new_list.append(w) 
-    
+            new_list.append(w)
+
     # print('new_list',new_list)
-    # print('array_keyword',array_keyword)  
+    # print('array_keyword',array_keyword)
     if len(new_list) == 0:
-        i =0
+        i = 0
         currentindex = 0
     else:
         i = new_list[0]
         currentindex = new_list[0]
     # print('idxdata',idxdata)
-    # print('currentindex',new_list[0]) 
-    
+    # print('currentindex',new_list[0])
+
     # while i < descindex:
     for i in new_list:
         descindex = new_list[len(new_list)-1]
-        if i >= currentindex and i in new_list and array_desc[i] != ' ' and currentindex<=descindex:
+        if i >= currentindex and i in new_list and array_desc[i] != ' ' and currentindex <= descindex:
 
-            backward = findbackward(array_desc,i,setting_front)
-            forward = findforward(array_desc,i,setting_back)
+            backward = findbackward(array_desc, i, setting_front)
+            forward = findforward(array_desc, i, setting_back)
             back = array_desc[backward:i]
-            
+
             forw = array_desc[i:forward]
             currentindex = forward-1
-            i=currentindex+1
+            i = currentindex+1
             max_size = len(forw)
-            last_index = max_size -1
+            last_index = max_size - 1
             # print('len',forw[len(forw)-1])
             if forw[len(forw)-1] == ' ':
                 forw.pop(last_index)
             # print('forw',forw)
-            
+
             backw = ''.join(back)
             forwo = ''.join(forw)
             # print(f)
             sentent = backw+forwo
-            
-            
+
             sw = ''
-            sen = sentent.split(' ')  
+            sen = sentent.split(' ')
             dictarr = []
             status = 0
             # print('sen',sen)
             sen = [x for x in sen if x]
-            
+
             for s in sen:
                 # print(dictarr)
                 if word != s:
-                    sw += s +'  '
+                    sw += s + '  '
             # print('sw',sw)
             stradvertisetoken = tokenlist(sw)
-            # print(stradvertisetoken)  
-            
+            # print(stradvertisetoken)
+
             dictstr = []
             myList = []
             myList = sw.split()
@@ -162,7 +162,7 @@ def checkkeyword():
             print(stradvertisetoken)
             for s in stradvertisetoken:
                 # print(s)
-                if s != '  ' and s != "," and s != ' ' and s != ":" and s != '' and s != "[" and s != "]" and s != '️' and s != '"' and s !="'":
+                if s != '  ' and s != "," and s != ' ' and s != ":" and s != '' and s != "[" and s != "]" and s != '️' and s != '"' and s != "'":
                     # print('s',s,len(s))
                     dictstr = requests.get(pathnodejs+'/api/dicts?name='+s)
                     dictstr = json.loads(dictstr.text)
@@ -173,17 +173,17 @@ def checkkeyword():
                         arrdictid.append(int(dictstr[0]["id"]))
                         arrdictname.append(s)
                     else:
-                        indict =  "INSERT INTO dicts (id, name, status) VALUES (NULL,"
-                        indict+= "'"+s +"',"
-                        indict+= "'"+str(1) +"')"
+                        indict = "INSERT INTO dicts (id, name, status) VALUES (NULL,"
+                        indict += "'"+s + "',"
+                        indict += "'"+str(1) + "')"
                         # print(indict)
-                        indictsql = requests.get(pathnodejs+'/api/dicts/createddicttoken?name='+ indict)
+                        indictsql = requests.get(
+                            pathnodejs+'/api/dicts/createddicttoken?name=' + indict)
                         indictsql = json.loads(indictsql.text)
                         arrdictid.append(indictsql["id"])
                         arrdictname.append(s)
                         # print(indictsql["id"])
-                    
-            
+
             keyworddictId = []
             listfull = []
             for item in stradvertisetoken:
@@ -191,28 +191,28 @@ def checkkeyword():
                     listfull.append('<span style="color:red">'+item+'</span>')
                 else:
                     listfull.append(item)
-                    
-            print('listfull',listfull)
-            
+
+            print('listfull', listfull)
+
             sumtext = listToString(listfull)
             # sumtext = sumtext.replace(' ','')
 
-            print('sumtext',sumtext)
+            print('sumtext', sumtext)
             sw = sumtext
             # print('status',status)
-            dictkeyall= intersection(arrdictid, array_mapkeyword_dicts)
+            dictkeyall = intersection(arrdictid, array_mapkeyword_dicts)
 
-            arr_data.append({'dict_id':dictarr,
-                             'dict_name':arrdictid,
-            'keyword_dict_id':dictkeyall,
-            'dict_name':arrdictname,
-                             'sen':myList,
-                             'sentent':sw})
+            arr_data.append({'dict_id': dictarr,
+                             'dict_name': arrdictid,
+            'keyword_dict_id': dictkeyall,
+            'dict_name': arrdictname,
+                             'sen': myList,
+                             'sentent': sw})
             word = sen[len(sen)-1]
         else:
             i = i+1
             # currentindex = currentindex+1
-                    
+
     return arr_data
 
 
@@ -239,26 +239,26 @@ def checkkeyword():
 #     rulekey = json.loads(rulekey)
 #     # rulekey = np.asarray(rulekey)
 #     # print(len(rulekey))
-    
+
 #     keyword_dicts = requests.get(pathnodejs+'/api/keyword_dicts?status=1')
 #     keyword_dicts = keyword_dicts.text
 #     keyword_dicts = json.loads(keyword_dicts)
 #     keyword_dicts = np.asarray(keyword_dicts)
-    
+
 #     mapkeyword_dicts = requests.get(pathnodejs+'/api/keyword_dicts/mapdictId')
 #     mapkeyword_dicts = mapkeyword_dicts.text
 #     mapkeyword_dicts = json.loads(mapkeyword_dicts)
 #     mapkeyword_dicts = np.asarray(mapkeyword_dicts)
-    
+
 #     array_mapkeyword_dicts = []
 #     for dict in mapkeyword_dicts:
 #         array_mapkeyword_dicts.append(dict['id'])
-    
-    
+
+
 #     array_keyword = []
 #     for restaurant in keyword_dicts:
 #         array_keyword.append(restaurant['name'])
-    
+
 #     setting = requests.get(pathnodejs+'/api/token_setting')
 #     setting = setting.text
 #     setting = json.loads(setting)
@@ -270,7 +270,7 @@ def checkkeyword():
 #     arr_data = []
 #     spllist = []
 #     keywordarr = []
-    
+
 #     # print(array_desc)
 #     for des in array_desc:
 #         # print(k['name'])
@@ -281,9 +281,9 @@ def checkkeyword():
 #     # print('keywordarr',keywordarr)
 #     for ke in keywordarr:
 #         if ke not in newkeywordarr:
-#             newkeywordarr.append(ke) 
-            
-    
+#             newkeywordarr.append(ke)
+
+
 #     if len(keywordarr) > 0 and len(rulekey) == 0:
 #         strkeywordarr = str(newkeywordarr).replace(' ','')
 #         k =  "INSERT INTO rule_based_keyword (id, product_token_id, keyword_id) VALUES (NULL,"
@@ -291,36 +291,36 @@ def checkkeyword():
 #         k+= "'"+strkeywordarr +"')"
 #         # print(k)
 #         # print(strkeywordarr)
-        
-#     idx = {x:i for i,x in enumerate(array_desc)}  
+
+#     idx = {x:i for i,x in enumerate(array_desc)}
 #     # print(idx)
-#     idxdata = [] 
+#     idxdata = []
 #     for i,x in enumerate(array_desc):
 #         idxdata.append({'id':i,'x':x})
 #     # print(idxdata)
-#     tt = [idx[x] for x in array_keyword if x in idx]  
+#     tt = [idx[x] for x in array_keyword if x in idx]
 #     tt=[]
 #     # print(array_desc)
 #     # print('array_keyword',array_keyword)
 #     for x in array_keyword:
-#         # print('x',x) 
+#         # print('x',x)
 #         for i in idxdata:
-#             # print('x',i['x']) 
+#             # print('x',i['x'])
 #             # print('xx',x)
 #             if x in str(i['x']) and i['x'] != '':
 #                 # print(i['x'])
 #                 tt.append(i['id'])
-#     # print(tt)   
+#     # print(tt)
 #     tt.sort()
 #     new_list = []
 #     word = ''
 #     k = ''
 #     for w in tt:
 #         if w not in new_list:
-#             new_list.append(w) 
-    
+#             new_list.append(w)
+
 #     # print('new_list',new_list)
-#     # print('array_keyword',array_keyword)  
+#     # print('array_keyword',array_keyword)
 #     if len(new_list) == 0:
 #         i =0
 #         currentindex = 0
@@ -328,8 +328,8 @@ def checkkeyword():
 #         i = new_list[0]
 #         currentindex = new_list[0]
 #     # print('idxdata',idxdata)
-#     # print('currentindex',new_list[0]) 
-    
+#     # print('currentindex',new_list[0])
+
 #     # while i < descindex:
 #     for i in new_list:
 #         descindex = new_list[len(new_list)-1]
@@ -340,7 +340,7 @@ def checkkeyword():
 #         # print(array_desc[currentindex])
 #         # print('new_list',new_list)
 #         if i >= currentindex and i in new_list and array_desc[i] != ' ' and currentindex<=descindex:
-            
+
 #             # print('i',i)
 #             # print('currentindex',currentindex)
 #             # print(array_desc[currentindex])
@@ -355,24 +355,24 @@ def checkkeyword():
 #             #             currentindex = backward
 #             #             print(backward)
 #             #         b+=1
-                        
-                
+
+
 #             # print('array_desc',array_desc[i])
 #             # print('backward',backward)
 #             # print('backward',array_desc[backward:i])
-            
+
 #             forward = findforward(array_desc,i,setting_back)
 #             # print('forward',forward)
 #             # print('forward',array_desc[i:forward])
-            
+
 #             back = array_desc[backward:i]
-            
+
 #             forw = array_desc[i:forward]
 #             # print('back',back)
 #             # print('forw',forw)
 #             # print('test',forw[len(forw)-2])
 #             # print('back',back[len(back)-1])
-                
+
 #             # print(arr_data[len(arr_data-1)])
 #             # if len(arr_data) > 0:
 #             #     # if back in arr_data[len(arr_data-1)]:
@@ -380,7 +380,7 @@ def checkkeyword():
 #             #         print(arr_data[int(len(arr_data))-1])
 #             #         print(back)
 #             #         if back :
-                        
+
 #             # if forw[len(forw)-2] == ' ':
 #             #     forw = array_desc[i:forward-2]
 #             #     currentindex = forward-2
@@ -401,22 +401,22 @@ def checkkeyword():
 #             #     # print(f)
 #             #     f = ''.join(f)
 #             #     # forw = array_desc[i:forward+1]
-            
+
 #             max_size = len(forw)
 #             last_index = max_size -1
 #             # print('len',forw[len(forw)-1])
 #             if forw[len(forw)-1] == ' ':
 #                 forw.pop(last_index)
 #             # print('forw',forw)
-            
+
 #             backw = ''.join(back)
 #             forwo = ''.join(forw)
 #             # print(f)
 #             sentent = backw+forwo
-            
-            
+
+
 #             sw = ''
-#             sen = sentent.split(' ')  
+#             sen = sentent.split(' ')
 #             dictarr = []
 #             status = 0
 #             # print(sen)
@@ -427,7 +427,7 @@ def checkkeyword():
 #                     sw += s +'  '
 #             # print('sw',sw)
 #             stradvertisetoken = tokenlist(sw)
-#             # print(stradvertisetoken)  
+#             # print(stradvertisetoken)
 #             dictstr = []
 #             myList = []
 #             myList = sw.split()
@@ -458,8 +458,8 @@ def checkkeyword():
 #                         arrdictid.append(indictsql["id"])
 #                         arrdictname.append(s)
 #                         # print(indictsql["id"])
-                    
-            
+
+
 #             # print('myList',myList)
 #             # sql = str(dictarr).replace(' ','')
 #             # rule =  "SELECT m.* FROM map_rule_based m WHERE m.status = 1 and m.dict_id = "
@@ -487,7 +487,7 @@ def checkkeyword():
 #             strarrdictname = str(strarrdictname).replace("'",'"')
 #             # strmyList = str(myList).replace(' ','')
 #             # print(myList)
-            
+
 #             Listsen = []
 #             for m in myList:
 #                 Listsen.append({"name":m})
@@ -495,23 +495,23 @@ def checkkeyword():
 #             # strmyList = str(strmyList).replace('["','[{"name":"')
 #             # strmyList = str(strmyList).replace('"]','"}]')
 #             # strmyList = str(strmyList).replace(",',","',',")
-            
+
 #             # strmyList = str(strmyList).replace(',','},{"name":')
 #             # strmyList = str(strmyList).replace("']",'}]')
 #             strmyList = str(Listsen)
 #             strmyList = str(strmyList).replace(",'",',"')
 #             strmyList = str(strmyList).replace("'",'"')
 #             strmyList = str(strmyList).replace('""','"')
-            
+
 #             sw += "')"
 #             sw= str(sw).replace("'  '","' ")
 #             # print(sw)
-             
+
 #             print('arrdictid',arrdictid)
 #             print('array_mapkeyword_dicts',array_mapkeyword_dicts)
 #             dictkeyall = intersection(arrdictid, array_mapkeyword_dicts)
 #             print('dictkeyall',dictkeyall)
-#             finddictId = str(dictkeyall).replace(' ','') 
+#             finddictId = str(dictkeyall).replace(' ','')
 #             print('finddictId',finddictId)
 #             print('strarrdictid',strarrdictid)
 #             if len(keywordarr) > 0 and len(rulekey) == 0:
@@ -529,8 +529,8 @@ def checkkeyword():
 #             word = sen[len(sen)-1]
 #             # print(word)
 #             # print('arr_data',arr_data)
-#             # ws = sw.split(' ')  
-#             # print(ws)  
+#             # ws = sw.split(' ')
+#             # print(ws)
 #             # word = ws[len(ws)-1]
 #             # print(word)
 #             # if word == '':
@@ -538,12 +538,12 @@ def checkkeyword():
 #             # print('len(array_desc)',len(array_desc))
 #             # print('backward',backward)
 #             # print('forward',forward)
-            
+
 #             # print('word',word)
 #         else:
 #             i = i+1
 #             # currentindex = currentindex+1
-                    
+
 #     return arr_data
 
 def intersection(lst1, lst2):
@@ -561,17 +561,17 @@ def intersection(lst1, lst2):
 #     dicts = json.loads(dicts)
 #     words = set(thai_words())  # thai_words() returns frozenset
 #     my_array = np.asarray(dicts)
-    
+
 #     for restaurant in my_array:
 #         # print (restaurant['name'])
 #         value = restaurant['name']
-#         words.add(value) 
-    
+#         words.add(value)
+
 #     keyword_dicts = requests.get(pathnodejs+'/api/keyword_dicts?status=1')
 #     keyword_dicts = keyword_dicts.text
 #     keyword_dicts = json.loads(keyword_dicts)
 #     keyword_dicts = np.asarray(keyword_dicts)
-    
+
 #     k = ''
 #     key = []
 #     for restaurant in keyword_dicts:
@@ -579,7 +579,7 @@ def intersection(lst1, lst2):
 #         value = restaurant['name']
 #         k+=restaurant['name']
 #         key.append(restaurant['name'])
-#         words.add(value) 
+#         words.add(value)
 #     # print('k',k)
 #     custom_tokenizer = Tokenizer(words)
 #     name_result = custom_tokenizer.word_tokenize(name)
@@ -596,10 +596,10 @@ def intersection(lst1, lst2):
 #             for real in namereal_result:
 #                 if item in real:
 #                     listfull.append(item)
-                    
-                    
+
+
 #     # print('listfull',listfull)
-    
+
 #     for k in key:
 #         t = name.replace(k,'<span style="color:red">'+k+'</span>')
 #         name = t
@@ -607,12 +607,12 @@ def intersection(lst1, lst2):
 #     # print(t)
 #     # print('name',name)
 #     # array_desc = tokenlist(name)
-    
+
 #     return name
 
 
 @app.route('/worktokendesc', methods=["GET"])
-@cross_origin(origin='*',headers=['Content-Type','Authorization'])
+@cross_origin(origin='*', headers=['Content-Type', 'Authorization'])
 def worktokendesc():
     name = request.args.get('text')
     # name = name.replace(' ', '')
@@ -622,25 +622,25 @@ def worktokendesc():
     dicts = json.loads(dicts)
     words = set(thai_words())  # thai_words() returns frozenset
     my_array = np.asarray(dicts)
-    
+
     for restaurant in my_array:
         # print (restaurant['name'])
         value = restaurant['name']
-        words.add(value) 
-    
+        words.add(value)
+
     keyword_dicts = requests.get(pathnodejs+'/api/keyword_dicts?status=1')
     keyword_dicts = keyword_dicts.text
     keyword_dicts = json.loads(keyword_dicts)
     keyword_dicts = np.asarray(keyword_dicts)
-    
+
     k = ''
     key = []
     for restaurant in keyword_dicts:
         # print (restaurant['name'])
         value = restaurant['name']
-        k+=restaurant['name']
+        k += restaurant['name']
         key.append(restaurant['name'])
-        words.add(value) 
+        words.add(value)
     # print('k',k)
     custom_tokenizer = Tokenizer(words)
     name_result = custom_tokenizer.word_tokenize(name)
@@ -648,17 +648,17 @@ def worktokendesc():
     # print('name_result',name_result)
     namereal_result = key
     # print('namereal_result',namereal_result)
-    listfull=[]
+    listfull = []
     dictkeyall = intersection(name_result, namereal_result)
     # print(dictkeyall)
     for item in name_result:
-                if item in dictkeyall:
+               if item in dictkeyall:
                     listfull.append('<span style="color:red">'+item+'</span>')
                 else:
                     listfull.append(item)
-                    
+
     # print('listfull',listfull)
-    
+
     sumtext = listToString(listfull)
     # sumtext = sumtext.replace(' ','')
     # print(sumtext)
@@ -666,16 +666,18 @@ def worktokendesc():
     # print(t)
     # print('name',name)
     # array_desc = tokenlist(name)
-    
+
     return sumtext
 
+
 def listToString(s):
-     
+
     # initialize an empty string
     str1 = ""
- 
+
     # return string
     return (str1.join(s))
+
 
 def tokenlist(name):
     x = requests.get(pathnodejs+'/api/dicts?status=1')
@@ -683,32 +685,32 @@ def tokenlist(name):
     dicts = json.loads(dicts)
     words = set(thai_words())  # thai_words() returns frozenset
     my_array = np.asarray(dicts)
-    
+
     for restaurant in my_array:
         # print (restaurant['name'])
         value = restaurant['name']
-        words.add(value) 
-    
+        words.add(value)
+
     keyword_dicts = requests.get(pathnodejs+'/api/keyword_dicts?status=1')
     keyword_dicts = keyword_dicts.text
     keyword_dicts = json.loads(keyword_dicts)
     keyword_dicts = np.asarray(keyword_dicts)
-    
+
     array_keyword = []
     for restaurant in keyword_dicts:
         array_keyword.append(restaurant['name'])
-        words.add(restaurant['name']) 
-        
+        words.add(restaurant['name'])
+
     custom_tokenizer = Tokenizer(words)
     name_result = custom_tokenizer.word_tokenize(name)
-    
+
     array_desc = []
     for n in name_result:
         array_desc.append(n)
-        
+
     return array_desc
 
-def findbackward(array,index,setting):
+def findbackward(array, index,setting):
     bc = 0
     mb = 1
     while bc < setting:
@@ -717,14 +719,14 @@ def findbackward(array,index,setting):
         if cb < len(array):
             # print(array[cb])
             if array[cb] == ' ':
-                bc = bc+ 1
+                bc = bc + 1
             if cb == 0:
-                bc = bc+ 1
+                bc = bc + 1
         mb = mb+1
-        # print('cb',cb)    
+        # print('cb',cb)
     return cb
 
-def findforward(array,index,setting):
+def findforward(array, index,setting):
     # print('findforward',index)
     bc = 0
     mb = 1
@@ -745,6 +747,7 @@ def findforward(array,index,setting):
         mb = mb+1
         # print('findforward',array[cb+1])
     return cb+1
- 
+
+
 if __name__ == "__main__":
     app.run(debug=False)
