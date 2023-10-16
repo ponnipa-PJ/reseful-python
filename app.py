@@ -652,7 +652,7 @@ def worktokendesc():
     dictkeyall = intersection(name_result, namereal_result)
     # print(dictkeyall)
     for item in name_result:
-               if item in dictkeyall:
+                if item in dictkeyall:
                     listfull.append('<span style="color:red">'+item+'</span>')
                 else:
                     listfull.append(item)
